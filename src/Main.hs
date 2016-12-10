@@ -69,10 +69,6 @@ main = S.withSession $ \sess -> do
       <* hPutChar stderr c)
     (['A'..'Z'] :: [Char])
   hPutChar stderr '\n'
-  {-
-  r <- S.post sess membersUrl $
-    ("__EVENTTARGET" := ("lb_All" :: String)) : postParams r
-  -}
   let urls = rs >>= (\r -> fromJust $ scrapeFrom r scrapeMemberEditUrls)
 
   hPutStrLn stderr $ "Found " ++ show (length urls) ++ " members."
