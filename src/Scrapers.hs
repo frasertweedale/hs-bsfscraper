@@ -30,8 +30,12 @@ import Text.StringLike (StringLike)
 
 import Member
 
-valueById s = unBS
-  <$> attr "value" (TagString "input" @: [AttributeString "id" @= s])
+valueById = attrById "value"
+
+checkedById s = (== "checked") <$> attrById "checked" s <|> pure False
+
+attrById k s = unBS
+  <$> attr k (TagString "input" @: [AttributeString "id" @= s])
 
 scrapeMemberEditUrls :: (Ord str, Show str, StringLike str) => Scraper str [str]
 scrapeMemberEditUrls = attrs "href" $
@@ -63,6 +67,7 @@ scrapeMember = Member
  <*> optional (valueById "Date_Inactivated")
  <*> optional (valueById "Date_Reactivated")
  <*> scrapePastStudies
+ <*> checkedById "Reg_For_Next_Study"
 
 scrapePastStudies =
   let

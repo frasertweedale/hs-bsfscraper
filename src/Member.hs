@@ -55,6 +55,7 @@ data Member = Member
   , _dateInactivated :: Maybe String
   , _dateReactivated :: Maybe String
   , _pastStudies :: PastStudies
+  , _registeredForNextStudy :: Bool
   } deriving (Show, Eq)
 makeClassy ''Member
 
