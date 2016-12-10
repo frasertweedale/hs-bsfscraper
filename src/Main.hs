@@ -19,7 +19,7 @@
 
 import Control.Applicative
 import Data.Char (chr, ord)
-import Data.Maybe (mapMaybe, fromJust)
+import Data.Maybe (catMaybes, fromJust, mapMaybe)
 import Data.Monoid ((<>))
 import System.IO (hPutStrLn, hPutChar, hPutStr, hSetEcho, stderr, stdin)
 
@@ -78,11 +78,12 @@ main = S.withSession $ \sess -> do
   hPutStrLn stderr $ "Found " ++ show (length urls) ++ " members."
   hPutStrLn stderr "Retrieving member details..."
   let unBS = map (chr . fromIntegral) . L.unpack
-  members <- mapM
+  members <- catMaybes <$> mapM
     ((\url -> scrapeMemberInfo sess url <* hPutChar stderr '.') . unBS)
     urls
   hPutChar stderr '\n'
-  L.putStr $ encode $ mapMaybe (fmap memberSummaryRecord) members
+  hPutStrLn stderr $ "Parsed " <> show (length members) <> " members."
+  L.putStr $ encode $ fmap memberSummaryRecord members
   hPutStrLn stderr "Finished!"
 
 scrapeMemberInfo :: S.Session -> String -> IO (Maybe Member)
