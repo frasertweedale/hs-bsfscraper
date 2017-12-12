@@ -39,7 +39,7 @@ attrById k s = unBS
 
 scrapeMemberEditUrls :: (Ord str, Show str, StringLike str) => Scraper str [str]
 scrapeMemberEditUrls = attrs "href" $
-  TagString "a" @: [AttributeString "href" @=~ (makeRegex "^SecMembersEdit" :: Regex)]
+  TagString "a" @: [AttributeString "href" @=~ (makeRegex "^MemberEdit.aspx" :: Regex)]
 
 scrapeAddress = Address
   <$> valueById "Mail_Address_1"
