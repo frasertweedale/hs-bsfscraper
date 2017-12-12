@@ -63,13 +63,8 @@ main = S.withSession $ \sess -> do
 
   hPutStrLn stderr "Retrieving member list..."
   r <- S.get sess activeMembersUrl
-  rs <- mapM
-    (\c ->
-      S.post sess activeMembersUrl (("__EVENTTARGET" := ("lb_" <> [c])) : postParams r)
-      <* hPutChar stderr c)
-    (['A'..'Z'] :: [Char])
-  hPutChar stderr '\n'
-  let urls = rs >>= (\r -> fromJust $ scrapeFrom r scrapeMemberEditUrls)
+
+  let urls = fromJust $ scrapeFrom r scrapeMemberEditUrls
 
   hPutStrLn stderr $ "Found " ++ show (length urls) ++ " members."
   hPutStrLn stderr "Retrieving member details..."
