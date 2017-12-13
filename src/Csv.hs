@@ -38,7 +38,6 @@ memberSummaryRecord v =
   , CanField $ v ^. city
   , CanField $ v ^. postcode
   , CanField $ v ^. churchName
-  , CanField $ v ^. mobilePhone
-  , CanField $ v ^. homePhone
+  , CanField $ v ^. phone
   , CanField $ v ^. email
   ]

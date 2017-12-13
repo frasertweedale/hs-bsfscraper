@@ -38,20 +38,19 @@ makeClassy ''Church
 
 type Study = String
 type Leader = String
-type PastStudies = [(Study, Leader)]
+type PastStudy = (Study, Leader)
+type PastStudies = [PastStudy]
 
 data Member = Member
   { _familyName :: String
   , _givenName :: String
   , _memberAddress :: Address
-  , _mobilePhone :: Maybe String
-  , _homePhone :: Maybe String
-  , _businessPhone :: Maybe String
+  , _phone :: Maybe String
   , _email :: Maybe String
   , _memberChurch :: Church
-  , _invitedBy :: Maybe String
   -- TODO make these actual dates
   , _dateRegistered :: String
+  , _dateEnrolled :: Maybe String
   , _dateInactivated :: Maybe String
   , _dateReactivated :: Maybe String
   , _pastStudies :: PastStudies

@@ -20,6 +20,9 @@
 module Scrapers where
 
 import Control.Applicative
+import Data.Bool (bool)
+import Data.Maybe (catMaybes)
+import Data.Semigroup ((<>))
 
 import Control.Lens
 import Data.ByteString.Lens
@@ -49,35 +52,40 @@ scrapeAddress = Address
   <*> valueById "Mail_Zip"
 
 scrapeChurch = Church
-  <$> valueById "Church_Name"
+  <$> (unBS <$> text
+    (  TagString "select" @: [AttributeString "name" @= "ddl_Church_Name"]
+    // TagString "option" @: [AttributeString "selected" @= "selected"] ))
   <*> valueById "Church_City"
-  <*> valueById "Church_Denomination_1"
+  <*> valueById "Church_Denomination"
 
 scrapeMember = Member
  <$> valueById "Last_Name"
  <*> valueById "First_Name"
  <*> scrapeAddress
- <*> optional (valueById "Cell_Mobile_Phone")
- <*> optional (valueById "Home_Phone")
- <*> optional (valueById "Business_Phone")
+ <*> optional (valueById "Cell_Phone")
  <*> optional (valueById "Email_Address")
  <*> scrapeChurch
- <*> optional (valueById "Invited_By")
- <*> valueById "Registration_Date"
+ <*> valueById "Date_Registered"
+ <*> optional (valueById "Date_Enrolled")
  <*> optional (valueById "Date_Inactivated")
- <*> optional (valueById "Date_Reactivated")
+ <*> optional (valueById "Date_Reinstated")
  <*> scrapePastStudies
- <*> checkedById "Reg_For_Next_Study"
+ <*> checkedById "ckb_Register_For_Next_Study"
+
+studies :: [String]
+studies =
+  [ "Genesis", "Moses", "PPL1", "Isaiah", "PPL2"
+  , "Matthew", "Romans", "Acts", "John", "Revelation" ]
 
 scrapePastStudies =
-  let
-    keys =
-      [ "Genesis_DL", "John_DL", "Acts_DL", "Romans_DL", "Isaiah_DL"
-      , "Moses_DL", "Revelation_GL", "Matthew_DL", "Minor_Prophets_DL"
-      ]
-  in
-    filter ((/= "") . snd)
-    <$> mapM (\k -> (k,) <$> valueById k) keys
+  catMaybes <$> traverse scrapePastStudy studies
+
+scrapePastStudy study =
+  optional $
+    checkedById idCheckbox >>= bool empty ((study,) <$> valueById idGL)
+  where
+    idCheckbox = "ckbx_" <> study <> "_Completed"
+    idGL = "txbx_" <> study <> "_GL"
 
 ensureNonEmpty = (>>= f) where
   f s | s == "" = empty | otherwise = pure s
