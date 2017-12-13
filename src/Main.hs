@@ -22,6 +22,7 @@ import Data.Char (chr, ord)
 import Data.Maybe (catMaybes, fromJust, mapMaybe)
 import Data.Monoid ((<>))
 import System.IO (hPutStrLn, hPutChar, hPutStr, hSetEcho, stderr, stdin)
+import System.Environment (getArgs)
 
 import Control.Lens
 import qualified Data.ByteString as B
@@ -38,12 +39,18 @@ import Scrapers
 
 topUrl = "https://class.bsfinternational.org/"
 landingUrl = "https://class.bsfinternational.org/Default.aspx"
-activeMembersUrl = "https://class.bsfinternational.org/SecMembersList.aspx"
-inactiveMembersUrl = "https://class.bsfinternational.org/SecMembersListInactive.aspx"
+membersUrl = "https://class.bsfinternational.org/SecMembersList.aspx"
 classDataUrl = "https://class.bsfinternational.org/Orders_ClassWelcome_3.aspx"
+
+-- | Should we show active or inactive members?
+--
+inactive :: [String] -> Bool
+inactive = elem "inactive"
 
 main :: IO ()
 main = S.withSession $ \sess -> do
+  args <- getArgs
+
   (classNo, password) <- getCreds
   hPutStrLn stderr "Logging in..."
   r <- S.get sess landingUrl
@@ -62,7 +69,11 @@ main = S.withSession $ \sess -> do
   r <- S.post sess classDataUrl params
 
   hPutStrLn stderr "Retrieving member list..."
-  r <- S.get sess activeMembersUrl
+  r <- S.get sess membersUrl
+  r <- if inactive args
+    then S.post sess membersUrl -- activate "View Inactive" in drop-down
+          (("ddl_view" := ("Inactive" :: String)) : postParams r)
+    else pure r -- use the original response
 
   let urls = fromJust $ scrapeFrom r scrapeMemberEditUrls
 
@@ -74,13 +85,14 @@ main = S.withSession $ \sess -> do
     urls
   hPutChar stderr '\n'
   hPutStrLn stderr $ "Parsed " <> show (length members) <> " members."
+  hPutStrLn stderr $ "registered for next study: " <> show (length $ filter (^. registeredForNextStudy) members)
   L.putStr $ encode $ fmap memberSummaryRecord members
   hPutStrLn stderr "Finished!"
 
 scrapeMemberInfo :: S.Session -> String -> IO (Maybe Member)
 scrapeMemberInfo sess relUrl =
   let
-    opts = defaults & header "Referer" .~ [activeMembersUrl]
+    opts = defaults & header "Referer" .~ [membersUrl]
   in do
     r <- S.getWith opts sess $ topUrl ++ relUrl
     return $ scrapeFrom r scrapeMember
@@ -88,7 +100,10 @@ scrapeMemberInfo sess relUrl =
 
 -- | Extract POST args from form in response
 --
-postParamsExtra :: [String] -> Response L.ByteString -> [FormParam]
+postParamsExtra
+  :: [String]               -- ^ list of form parameters to include in post body
+  -> Response L.ByteString  -- ^ response to scrape field values from
+  -> [FormParam]            -- ^ list of form params
 postParamsExtra extraIds r =
   let
     tags = parseTags $ r ^. responseBody
